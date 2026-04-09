@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Karizmo AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080810;
+  --panel: #0f0f1a;
+  --border: rgba(255,255,255,0.07);
+  --glow: #c8ff00;
+  --glow2: #00f5c8;
+  --red: #ff3c5f;
+  --text: #e8e8f0;
+  --muted: #555568;
+  --r: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(200,255,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,255,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── NOISE OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 60px 24px 100px;
+}
+
+/* ── HEADER ── */
+.header {
+  margin-bottom: 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+
+.logo-block {}
+
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(56px, 12vw, 96px);
+  line-height: 0.85;
+  letter-spacing: 2px;
+  color: var(--glow);
+  text-shadow: 0 0 60px rgba(200,255,0,0.3);
+}
+
+.logo span {
+  color: var(--text);
+  opacity: 0.3;
+}
+
+.tagline {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.version-badge {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--glow);
+  border: 1px solid rgba(200,255,0,0.3);
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: rgba(200,255,0,0.05);
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+/* ── TOKEN SECTION ── */
+.token-section {
+  background: rgba(200,255,0,0.04);
+  border: 1px solid rgba(200,255,0,0.15);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.token-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--glow);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-input {
+  flex: 1;
+  min-width: 200px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(200,255,0,0.2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  direction: ltr;
+  transition: border-color 0.2s;
+}
+.token-input:focus { outline: none; border-color: var(--glow); }
+.token-input::placeholder { color: var(--muted); }
+
+.token-status {
+  font-size: 10px;
+  padding: 6px 14px;
+  border-radius: 5px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.token-status.ok { color: var(--glow); border-color: rgba(200,255,0,0.3); }
+.token-status.err { color: var(--red); border-color: rgba(255,60,95,0.3); }
+
+/* ── MAIN PANEL ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+/* ── MODEL TABS ── */
+.model-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.tab.active {
+  background: rgba(200,255,0,0.1);
+  border-color: rgba(200,255,0,0.4);
+  color: var(--glow);
+}
+
+/* ── MODEL SELECT ── */
+.field-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.field-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.field select, .field input[type=number] {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.field select:focus, .field input:focus { outline: none; border-color: rgba(200,255,0,0.4); }
+
+/* ── PROMPT ── */
+.prompt-wrap { margin-bottom: 20px; }
+
+.prompt-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  padding: 14px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color 0.2s;
+  direction: ltr;
+  text-align: left;
+}
+.prompt-textarea:focus { outline: none; border-color: rgba(200,255,0,0.4); box-shadow: 0 0 0 1px rgba(200,255,0,0.1); }
+.prompt-textarea::placeholder { color: var(--muted); font-style: italic; }
+
+/* ── QUICK TAGS ── */
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+}
+.tag:hover { color: var(--glow); border-color: rgba(200,255,0,0.3); background: rgba(200,255,0,0.05); }
+
+/* ── GENERATE BUTTON ── */
+.gen-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--glow);
+  border: none;
+  border-radius: var(--r);
+  color: #080810;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.gen-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+}
+.gen-btn:hover:not(:disabled) {
+  background: #d8ff20;
+  box-shadow: 0 0 40px rgba(200,255,0,0.4), 0 0 80px rgba(200,255,0,0.15);
+  transform: translateY(-1px);
+}
+.gen-btn:active:not(:disabled) { transform: translateY(1px); }
+.gen-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--muted); }
+
+/* ── PROGRESS ── */
+.progress-wrap {
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+  display: none;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--glow), var(--glow2));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── STATUS LINE ── */
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  min-height: 20px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.status-dot.active { background: var(--glow); animation: blink 1s ease-in-out infinite; }
+.status-dot.done { background: var(--glow2); }
+.status-dot.err { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* ── RESULTS ── */
+.results { margin-top: 32px; }
+.results-header {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.results-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.result-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  animation: fadeIn 0.35s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+.rc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rc-model {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--glow);
+}
+.rc-time {
+  font-size: 9px;
+  color: var(--muted);
+  margin-right: auto;
+}
+.rc-prompt {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 14px;
+  direction: ltr;
+  text-align: left;
+}
+
+audio {
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  accent-color: var(--glow);
+}
+
+.rc-actions { display: flex; gap: 8px; }
+
+.btn-dl {
+  padding: 7px 16px;
+  background: rgba(0,245,200,0.08);
+  border: 1px solid rgba(0,245,200,0.25);
+  border-radius: 6px;
+  color: var(--glow2);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-block;
+}
+.btn-dl:hover { background: rgba(0,245,200,0.15); }
+
+.error-box {
+  background: rgba(255,60,95,0.07);
+  border: 1px solid rgba(255,60,95,0.2);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 11px;
+  color: var(--red);
+  direction: ltr;
+  text-align: left;
+  line-height: 1.6;
+}
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 60px;
+  text-align: center;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+@media(max-width:600px){
+  .panel { padding: 18px; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .field-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-block">
+      <div class="logo">KARIZMO<span>·</span>AI</div>
+      <div class="tagline">Sound Generation Platform · Powered by AudioCraft</div>
+    </div>
+    <div class="version-badge">v3.0 · HF Edition</div>
+  </div>
+
+  <!-- TOKEN -->
+  <div class="token-section">
+    <span class="token-label">🔑 HF Token</span>
+    <input
+      type="password"
+      id="hfToken"
+      class="token-input"
+      placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx"
+    />
+    <button class="token-status" id="tokenStatus" onclick="checkToken()">בדוק</button>
+  </div>
+
+  <!-- MAIN PANEL -->
+  <div class="panel">
+
+    <!-- TYPE TABS -->
+    <div class="model-tabs">
+      <button class="tab active" onclick="setType('music', this)">🎵 מוסיקה</button>
+      <button class="tab" onclick="setType('sfx', this)">🔊 SFX</button>
+      <button class="tab" onclick="setType('melody', this)">🎼 Melody</button>
+      <button class="tab" onclick="setType('stereo', this)">🎧 Stereo</button>
+    </div>
+
+    <!-- FIELDS -->
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">מודל</label>
+        <select id="modelSelect">
+          <option value="facebook/musicgen-small">MusicGen Small · מהיר</option>
+          <option value="facebook/musicgen-medium" selected>MusicGen Medium · מאוזן</option>
+          <option value="facebook/musicgen-large">MusicGen Large · הכי טוב</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">אורך (שניות)</label>
+        <input type="number" id="duration" value="8" min="2" max="30" step="1"/>
+      </div>
+      <div class="field">
+        <label class="field-label">Temperature</label>
+        <input type="number" id="temperature" value="1.0" min="0.1" max="2" step="0.1"/>
+      </div>
+    </div>
+
+    <!-- PROMPT -->
+    <div class="prompt-wrap">
+      <div class="field-label" style="margin-bottom:8px">תיאור (באנגלית)</div>
+      <textarea
+        id="promptInput"
+        class="prompt-textarea"
+        placeholder="Describe the sound you want to create...&#10;e.g: upbeat electronic music with heavy synths and punchy drums"
+        rows="3"
+      ></textarea>
+      <div class="tags" id="tagsRow">
+        <button class="tag" onclick="addTag('upbeat electronic')">upbeat electronic</button>
+        <button class="tag" onclick="addTag('dark ambient')">dark ambient</button>
+        <button class="tag" onclick="addTag('jazz fusion')">jazz fusion</button>
+        <button class="tag" onclick="addTag('hip hop beat 808')">hip hop 808</button>
+        <button class="tag" onclick="addTag('cinematic orchestral')">orchestral</button>
+        <button class="tag" onclick="addTag('lo-fi chill beats')">lo-fi</button>
+        <button class="tag" onclick="addTag('thunderstorm rain')">thunderstorm</button>
+        <button class="tag" onclick="addTag('synthwave retro')">synthwave</button>
+      </div>
+    </div>
+
+    <!-- BUTTON -->
+    <button class="gen-btn" id="genBtn" onclick="generate()">GENERATE</button>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-line">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">הכנס HF Token ולחץ Generate</span>
+    </div>
+
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="resultsSection" style="display:none">
+    <div class="results-header">תוצאות</div>
+    <div id="resultsList"></div>
+  </div>
+
+  <div class="footer">Karizmo AI · 2026 · Built on Facebook AudioCraft</div>
+
+</div>
+
+<script>
+// ════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════
+const TYPE_MODELS = {
+  music:  ['facebook/musicgen-small','facebook/musicgen-medium','facebook/musicgen-large'],
+  sfx:    ['facebook/audiogen-medium'],
+  melody: ['facebook/musicgen-melody'],
+  stereo: ['facebook/musicgen-stereo-small','facebook/musicgen-stereo-medium','facebook/musicgen-stereo-large'],
+};
+
+const MODEL_LABELS = {
+  'facebook/musicgen-small':          'MusicGen Small · מהיר',
+  'facebook/musicgen-medium':         'MusicGen Medium · מאוזן',
+  'facebook/musicgen-large':          'MusicGen Large · הכי טוב',
+  'facebook/audiogen-medium':         'AudioGen Medium · SFX',
+  'facebook/musicgen-melody':         'MusicGen Melody',
+  'facebook/musicgen-stereo-small':   'MusicGen Stereo Small',
+  'facebook/musicgen-stereo-medium':  'MusicGen Stereo Medium',
+  'facebook/musicgen-stereo-large':   'MusicGen Stereo Large',
+};
+
+let currentType = 'music';
+let generating = false;
+let progInterval = null;
+
+// ════════════════════════════════════
+// TOKEN
+// ════════════════════════════════════
+function getToken() {
+  return document.getElementById('hfToken').value.trim();
+}
+
+async function checkToken() {
+  const token = getToken();
+  const btn = document.getElementById('tokenStatus');
+  if (!token) { btn.textContent = '⚠ הכנס token'; btn.className = 'token-status err'; return; }
+  btn.textContent = '...';
+  try {
+    const r = await fetch('https://huggingface.co/api/whoami-v2', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      btn.textContent = `✓ ${d.name || 'מחובר'}`;
+      btn.className = 'token-status ok';
+    } else {
+      btn.textContent = '✗ token שגוי';
+      btn.className = 'token-status err';
+    }
+  } catch {
+    btn.textContent = '✗ שגיאה';
+    btn.className = 'token-status err';
+  }
+}
+
+// ════════════════════════════════════
+// TYPE TABS
+// ════════════════════════════════════
+function setType(type, el) {
+  currentType = type;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const sel = document.getElementById('modelSelect');
+  sel.innerHTML = '';
+  (TYPE_MODELS[type] || []).forEach(m => {
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = MODEL_LABELS[m] || m;
+    sel.appendChild(o);
+  });
+}
+
+// ════════════════════════════════════
+// PROMPT TAGS
+// ════════════════════════════════════
+function addTag(text) {
+  const ta = document.getElementById('promptInput');
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + ', ' + text : text;
+  ta.focus();
+}
+
+// ════════════════════════════════════
+// STATUS
+// ════════════════════════════════════
+function setStatus(text, type = '') {
+  document.getElementById('statusText').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (type ? ' ' + type : '');
+}
+
+function setProgress(pct) {
+  const wrap = document.getElementById('progressWrap');
+  const bar = document.getElementById('progressBar');
+  if (pct === null) { wrap.style.display = 'none'; bar.style.width = '0%'; }
+  else { wrap.style.display = 'block'; bar.style.width = pct + '%'; }
+}
+
+// ════════════════════════════════════
+// GENERATE
+// ════════════════════════════════════
+async function generate() {
+  if (generating) return;
+
+  const token = getToken();
+  const prompt = document.getElementById('promptInput').value.trim();
+  const model = document.getElementById('modelSelect').value;
+  const duration = parseFloat(document.getElementById('duration').value) || 8;
+  const temperature = parseFloat(document.getElementById('temperature').value) || 1.0;
+
+  if (!token) { setStatus('⚠ הכנס HF Token למעלה!', 'err'); return; }
+  if (!prompt) { setStatus('⚠ הכנס תיאור!', 'err'); setTimeout(() => setStatus('מוכן'), 2000); return; }
+
+  generating = true;
+  document.getElementById('genBtn').disabled = true;
+  setStatus('שולח בקשה...', 'active');
+  setProgress(5);
+
+  let prog = 5;
+  progInterval = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 6, 88);
+    setProgress(prog);
+  }, 1200);
+
+  const cardId = 'card_' + Date.now();
+  addLoadingCard(cardId, model, prompt);
+  document.getElementById('resultsSection').style.display = 'block';
+
+  const t0 = Date.now();
+
+  try {
+    // Hugging Face Inference API
+    const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          duration,
+          temperature,
+        }
+      })
+    });
+
+    clearInterval(progInterval);
+
+    if (!res.ok) {
+      let msg = `שגיאה ${res.status}`;
+      try {
+        const err = await res.json();
+        if (err.error) msg = err.error;
+        // מודל בטעינה
+        if (res.status === 503) msg = 'המודל בטעינה בשרתי HF — נסה שוב עוד 20 שניות';
+      } catch {}
+      throw new Error(msg);
+    }
+
+    setProgress(95);
+    const blob = await res.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+    setProgress(100);
+    setTimeout(() => setProgress(null), 600);
+
+    const modelShort = model.split('/')[1];
+    updateCardSuccess(cardId, audioUrl, `karizmo_${modelShort}_${Date.now()}.wav`, elapsed, model);
+    setStatus(`✓ הצליח · ${elapsed}s`, 'done');
+    setTimeout(() => setStatus('מוכן'), 4000);
+
+  } catch (err) {
+    clearInterval(progInterval);
+    setProgress(null);
+    updateCardError(cardId, err.message);
+    setStatus(`✗ ${err.message}`, 'err');
+    setTimeout(() => setStatus('מוכן'), 6000);
+  } finally {
+    generating = false;
+    document.getElementById('genBtn').disabled = false;
+  }
+}
+
+// ════════════════════════════════════
+// CARDS
+// ════════════════════════════════════
+function addLoadingCard(id, model, prompt) {
+  const list = document.getElementById('resultsList');
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.id = id;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${MODEL_LABELS[model] || model}</span>
+      <span class="rc-time">יוצר...</span>
+    </div>
+    <div class="rc-prompt">"${prompt}"</div>
+    <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:60%;background:linear-gradient(90deg,var(--glow),var(--glow2));animation:loading 1.5s ease-in-out infinite"></div>
+    </div>
+    <style>@keyframes loading{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}</style>
+  `;
+  list.insertBefore(card, list.firstChild);
+}
+
+function updateCardSuccess(id, audioUrl, filename, elapsed, model) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const prompt = card.querySelector('.rc-prompt').textContent;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${MODEL_LABELS[model] || model}</span>
+      <span class="rc-time">${elapsed}s · הושלם</span>
+    </div>
+    <div class="rc-prompt">${prompt}</div>
+    <audio controls>
+      <source src="${audioUrl}" type="audio/wav">
+      <source src="${audioUrl}" type="audio/flac">
+      <source src="${audioUrl}" type="audio/mpeg">
+    </audio>
+    <div class="rc-actions">
+      <a class="btn-dl" href="${audioUrl}" download="${filename}">⬇ הורד</a>
+    </div>
+  `;
+}
+
+function updateCardError(id, errMsg) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const prompt = card.querySelector('.rc-prompt').textContent;
+  const model = card.querySelector('.rc-model').textContent;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${model}</span>
+      <span class="rc-time" style="color:var(--red)">נכשל</span>
+    </div>
+    <div class="rc-prompt">${prompt}</div>
+    <div class="error-box">❌ ${errMsg}</div>
+  `;
+}
+
+// ════════════════════════════════════
+// INIT
+// ════════════════════════════════════
+window.addEventListener('load', () => {
+  console.log('🎵 Karizmo AI v3.0 loaded');
+});
+</script>
+</body>
+</html>
