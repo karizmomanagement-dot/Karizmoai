@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Karizmo AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080810;
+  --panel: #0f0f1a;
+  --border: rgba(255,255,255,0.07);
+  --glow: #c8ff00;
+  --glow2: #00f5c8;
+  --red: #ff3c5f;
+  --text: #e8e8f0;
+  --muted: #555568;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(200,255,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,255,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 60px 24px 100px;
+}
+.header {
+  margin-bottom: 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(56px, 12vw, 96px);
+  line-height: 0.85;
+  letter-spacing: 2px;
+  color: var(--glow);
+  text-shadow: 0 0 60px rgba(200,255,0,0.3);
+}
+.logo span { color: var(--text); opacity: 0.3; }
+.tagline { font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; margin-top: 8px; }
+.version-badge {
+  font-size: 9px; letter-spacing: 2px; color: var(--glow);
+  border: 1px solid rgba(200,255,0,0.3); padding: 4px 10px;
+  border-radius: 3px; background: rgba(200,255,0,0.05);
+  text-transform: uppercase; align-self: flex-start;
+}
+.token-section {
+  background: rgba(200,255,0,0.04);
+  border: 1px solid rgba(200,255,0,0.15);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.token-label { font-size: 9px; letter-spacing: 3px; color: var(--glow); text-transform: uppercase; white-space: nowrap; }
+.token-input {
+  flex: 1; min-width: 200px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(200,255,0,0.2);
+  border-radius: 6px; color: var(--text);
+  padding: 8px 12px;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  direction: ltr; transition: border-color 0.2s;
+}
+.token-input:focus { outline: none; border-color: var(--glow); }
+.token-input::placeholder { color: var(--muted); }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.model-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab {
+  padding: 8px 18px; border-radius: 6px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); transition: all 0.2s;
+}
+.tab:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.tab.active { background: rgba(200,255,0,0.1); border-color: rgba(200,255,0,0.4); color: var(--glow); }
+.field-row { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 140px; }
+.field-label { font-size: 9px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+.field select, .field input[type=number] {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text);
+  padding: 9px 12px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  cursor: pointer; transition: border-color 0.2s; width: 100%;
+}
+.field select:focus, .field input:focus { outline: none; border-color: rgba(200,255,0,0.4); }
+.prompt-wrap { margin-bottom: 20px; }
+.prompt-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text);
+  padding: 14px 16px;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  line-height: 1.7; resize: vertical; min-height: 90px;
+  transition: border-color 0.2s; direction: ltr; text-align: left;
+}
+.prompt-textarea:focus { outline: none; border-color: rgba(200,255,0,0.4); }
+.prompt-textarea::placeholder { color: var(--muted); font-style: italic; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.tag {
+  padding: 4px 12px; border-radius: 20px; font-size: 10px;
+  border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all 0.15s; background: transparent;
+  font-family: 'DM Mono', monospace;
+}
+.tag:hover { color: var(--glow); border-color: rgba(200,255,0,0.3); background: rgba(200,255,0,0.05); }
+.gen-btn {
+  width: 100%; padding: 16px;
+  background: var(--glow); border: none; border-radius: var(--r);
+  color: #080810;
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;
+  cursor: pointer; transition: all 0.2s;
+}
+.gen-btn:hover:not(:disabled) {
+  background: #d8ff20;
+  box-shadow: 0 0 40px rgba(200,255,0,0.4);
+  transform: translateY(-1px);
+}
+.gen-btn:active:not(:disabled) { transform: translateY(1px); }
+.gen-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--muted); }
+.progress-wrap { height: 2px; background: var(--border); border-radius: 2px; margin-top: 14px; overflow: hidden; display: none; }
+.progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--glow), var(--glow2)); border-radius: 2px; transition: width 0.4s ease; }
+.status-line { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 10px; color: var(--muted); letter-spacing: 1px; min-height: 20px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.status-dot.active { background: var(--glow); animation: blink 1s ease-in-out infinite; }
+.status-dot.done { background: var(--glow2); }
+.status-dot.err { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:0.4} 50%{opacity:1} }
+.results { margin-top: 32px; }
+.results-header {
+  font-size: 9px; letter-spacing: 4px; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.results-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.result-card {
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px; margin-bottom: 14px;
+  animation: fadeIn 0.35s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+.rc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rc-model { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px; color: var(--glow); }
+.rc-time { font-size: 9px; color: var(--muted); margin-right: auto; }
+.rc-prompt { font-size: 11px; color: var(--muted); font-style: italic; margin-bottom: 14px; direction: ltr; text-align: left; }
+audio { width: 100%; border-radius: 6px; margin-bottom: 10px; accent-color: var(--glow); }
+.rc-actions { display: flex; gap: 8px; }
+.btn-dl {
+  padding: 7px 16px;
+  background: rgba(0,245,200,0.08); border: 1px solid rgba(0,245,200,0.25);
+  border-radius: 6px; color: var(--glow2);
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px;
+  cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-block;
+}
+.btn-dl:hover { background: rgba(0,245,200,0.15); }
+.error-box {
+  background: rgba(255,60,95,0.07); border: 1px solid rgba(255,60,95,0.2);
+  border-radius: 6px; padding: 12px 14px; font-size: 11px; color: var(--red);
+  direction: ltr; text-align: left; line-height: 1.7;
+}
+.footer { margin-top: 60px; text-align: center; font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+@media(max-width:600px){
+  .panel { padding: 18px; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .field-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <div class="logo">KARIZMO<span>·</span>AI</div>
+      <div class="tagline">Sound Generation Platform · Powered by Replicate</div>
+    </div>
+    <div class="version-badge">v4.0 · Replicate</div>
+  </div>
+
+  <div class="token-section">
+    <span class="token-label">🔑 Replicate Token</span>
+    <input type="password" id="apiToken" class="token-input" placeholder="r8_xxxxxxxxxxxxxxxxxxxxxxxx"/>
+  </div>
+
+  <div class="panel">
+
+    <div class="model-tabs">
+      <button class="tab active" onclick="setType('music', this)">🎵 מוסיקה</button>
+      <button class="tab" onclick="setType('sfx', this)">🔊 SFX</button>
+      <button class="tab" onclick="setType('stereo', this)">🎧 Stereo</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">מודל</label>
+        <select id="modelSelect">
+          <option value="small">MusicGen Small · מהיר</option>
+          <option value="medium" selected>MusicGen Medium · מאוזן</option>
+          <option value="large">MusicGen Large · הכי טוב</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">אורך (שניות)</label>
+        <input type="number" id="duration" value="8" min="2" max="30" step="1"/>
+      </div>
+      <div class="field">
+        <label class="field-label">Temperature</label>
+        <input type="number" id="temperature" value="1.0" min="0.1" max="2" step="0.1"/>
+      </div>
+    </div>
+
+    <div class="prompt-wrap">
+      <div class="field-label" style="margin-bottom:8px">תיאור (באנגלית)</div>
+      <textarea id="promptInput" class="prompt-textarea"
+        placeholder="Describe the sound you want to create...&#10;e.g: upbeat electronic music with heavy synths and punchy drums"
+        rows="3"></textarea>
+      <div class="tags">
+        <button class="tag" onclick="addTag('upbeat electronic music with synths')">electronic</button>
+        <button class="tag" onclick="addTag('dark ambient cinematic')">dark ambient</button>
+        <button class="tag" onclick="addTag('jazz fusion improvisation')">jazz fusion</button>
+        <button class="tag" onclick="addTag('hip hop beat with 808 bass')">hip hop</button>
+        <button class="tag" onclick="addTag('cinematic orchestral strings')">orchestral</button>
+        <button class="tag" onclick="addTag('lo-fi chill beats')">lo-fi</button>
+        <button class="tag" onclick="addTag('thunderstorm heavy rain')">thunderstorm</button>
+        <button class="tag" onclick="addTag('synthwave retro 80s')">synthwave</button>
+        <button class="tag" onclick="addTag('deep house music with bass')">deep house</button>
+        <button class="tag" onclick="addTag('acoustic guitar folk')">acoustic</button>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">GENERATE</button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="status-line">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">הכנס Replicate Token ולחץ Generate</span>
+    </div>
+
+  </div>
+
+  <div class="results" id="resultsSection" style="display:none">
+    <div class="results-header">תוצאות</div>
+    <div id="resultsList"></div>
+  </div>
+
+  <div class="footer">Karizmo AI · 2026 · Built on Facebook AudioCraft via Replicate</div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// MODEL VERSIONS ON REPLICATE
+// ══════════════════════════════════════
+// meta/musicgen — הגרסה הרשמית של Meta ב-Replicate
+const REPLICATE_MODEL = 'meta/musicgen';
+
+const TYPE_OPTIONS = {
+  music: [
+    { value: 'small',  label: 'MusicGen Small · מהיר' },
+    { value: 'medium', label: 'MusicGen Medium · מאוזן' },
+    { value: 'large',  label: 'MusicGen Large · הכי טוב' },
+  ],
+  sfx: [
+    { value: 'medium', label: 'AudioGen Medium · SFX' },
+  ],
+  stereo: [
+    { value: 'stereo-small',  label: 'MusicGen Stereo Small' },
+    { value: 'stereo-medium', label: 'MusicGen Stereo Medium' },
+    { value: 'stereo-large',  label: 'MusicGen Stereo Large' },
+  ],
+};
+
+let generating = false;
+let progInterval = null;
+
+function getToken() { return document.getElementById('apiToken').value.trim(); }
+
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function setType(type, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const sel = document.getElementById('modelSelect');
+  sel.innerHTML = '';
+  (TYPE_OPTIONS[type] || []).forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.value;
+    o.textContent = m.label;
+    if (m.value === 'medium') o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function addTag(text) {
+  const ta = document.getElementById('promptInput');
+  ta.value = ta.value.trim() ? ta.value.trim() + ', ' + text : text;
+  ta.focus();
+}
+
+// ══════════════════════════════════════
+// STATUS
+// ══════════════════════════════════════
+function setStatus(text, type = '') {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
+}
+
+function setProgress(pct) {
+  const wrap = document.getElementById('progressWrap');
+  const bar  = document.getElementById('progressBar');
+  if (pct === null) { wrap.style.display = 'none'; bar.style.width = '0%'; }
+  else { wrap.style.display = 'block'; bar.style.width = pct + '%'; }
+}
+
+// ══════════════════════════════════════
+// GENERATE — Replicate API
+// ══════════════════════════════════════
+async function generate() {
+  if (generating) return;
+
+  const token  = getToken();
+  const prompt = document.getElementById('promptInput').value.trim();
+  const model  = document.getElementById('modelSelect').value;
+  const duration    = parseInt(document.getElementById('duration').value) || 8;
+  const temperature = parseFloat(document.getElementById('temperature').value) || 1.0;
+
+  if (!token)  { setStatus('⚠ הכנס Replicate Token!', 'err'); return; }
+  if (!prompt) { setStatus('⚠ הכנס תיאור!', 'err'); setTimeout(() => setStatus('מוכן'), 2000); return; }
+
+  generating = true;
+  document.getElementById('genBtn').disabled = true;
+  setStatus('שולח בקשה ל-Replicate...', 'active');
+  setProgress(8);
+
+  let prog = 8;
+  progInterval = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 5, 80);
+    setProgress(prog);
+  }, 1500);
+
+  const cardId = 'card_' + Date.now();
+  addLoadingCard(cardId, model, prompt);
+  document.getElementById('resultsSection').style.display = 'block';
+
+  const t0 = Date.now();
+
+  try {
+    // ── שלב 1: צור prediction ──
+    setStatus('יוצר prediction...', 'active');
+    const createRes = await fetch('https://api.replicate.com/v1/models/meta/musicgen/predictions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'wait=60',
+      },
+      body: JSON.stringify({
+        input: {
+          prompt,
+          model_version: model,
+          duration,
+          temperature,
+          output_format: 'wav',
+          normalization_strategy: 'peak',
+        }
+      })
+    });
+
+    if (!createRes.ok) {
+      const err = await createRes.json().catch(() => ({}));
+      throw new Error(err.detail || `שגיאה ${createRes.status}: ${createRes.statusText}`);
+    }
+
+    let prediction = await createRes.json();
+    setStatus(`ממתין לתוצאה... (ID: ${prediction.id?.slice(0,8)})`, 'active');
+
+    // ── שלב 2: polling עד שמוכן ──
+    let attempts = 0;
+    while (prediction.status !== 'succeeded' && prediction.status !== 'failed' && prediction.status !== 'canceled') {
+      await sleep(2500);
+      attempts++;
+      if (attempts > 60) throw new Error('timeout — לקח יותר מדי זמן');
+
+      const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      prediction = await pollRes.json();
+
+      prog = Math.min(prog + 3, 88);
+      setProgress(prog);
+      setStatus(`מעבד... ${attempts * 2.5 | 0}s`, 'active');
+    }
+
+    clearInterval(progInterval);
+
+    if (prediction.status === 'failed' || prediction.status === 'canceled') {
+      throw new Error(prediction.error || 'היצירה נכשלה');
+    }
+
+    // ── שלב 3: קבל URL של האודיו ──
+    const audioUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+    if (!audioUrl) throw new Error('לא התקבל קובץ אודיו');
+
+    setProgress(100);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    setTimeout(() => setProgress(null), 600);
+
+    updateCardSuccess(cardId, audioUrl, `karizmo_${model}_${Date.now()}.wav`, elapsed, model);
+    setStatus(`✓ הצליח · ${elapsed}s`, 'done');
+    setTimeout(() => setStatus('מוכן'), 5000);
+
+  } catch (err) {
+    clearInterval(progInterval);
+    setProgress(null);
+    console.error('[Karizmo]', err);
+    updateCardError(cardId, err.message);
+    setStatus(`✗ ${err.message}`, 'err');
+    setTimeout(() => setStatus('מוכן'), 7000);
+  } finally {
+    generating = false;
+    document.getElementById('genBtn').disabled = false;
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ══════════════════════════════════════
+// CARDS
+// ══════════════════════════════════════
+function addLoadingCard(id, model, prompt) {
+  const list = document.getElementById('resultsList');
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.id = id;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${model.toUpperCase()}</span>
+      <span class="rc-time">יוצר...</span>
+    </div>
+    <div class="rc-prompt">"${prompt}"</div>
+    <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div style="height:100%;width:40%;background:linear-gradient(90deg,var(--glow),var(--glow2));animation:slide 1.5s ease-in-out infinite"></div>
+    </div>
+    <style>@keyframes slide{0%{transform:translateX(-150%)}100%{transform:translateX(350%)}}</style>
+  `;
+  list.insertBefore(card, list.firstChild);
+}
+
+function updateCardSuccess(id, audioUrl, filename, elapsed, model) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const prompt = card.querySelector('.rc-prompt').textContent;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${model.toUpperCase()}</span>
+      <span class="rc-time">${elapsed}s · הושלם ✓</span>
+    </div>
+    <div class="rc-prompt">${prompt}</div>
+    <audio controls>
+      <source src="${audioUrl}" type="audio/wav">
+      <source src="${audioUrl}" type="audio/mpeg">
+    </audio>
+    <div class="rc-actions">
+      <a class="btn-dl" href="${audioUrl}" download="${filename}" target="_blank">⬇ הורד WAV</a>
+    </div>
+  `;
+}
+
+function updateCardError(id, errMsg) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const prompt = card.querySelector('.rc-prompt').textContent;
+  const model  = card.querySelector('.rc-model').textContent;
+  card.innerHTML = `
+    <div class="rc-top">
+      <span class="rc-model">${model}</span>
+      <span class="rc-time" style="color:var(--red)">נכשל</span>
+    </div>
+    <div class="rc-prompt">${prompt}</div>
+    <div class="error-box">
+      ❌ ${errMsg}<br><br>
+      <strong>בדוק:</strong><br>
+      · הטוקן נכון? (מתחיל ב-r8_)<br>
+      · יש לך קרדיט ב-Replicate? (replicate.com/account/billing)<br>
+      · נסה מודל קטן יותר: Small
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
